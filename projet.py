@@ -96,3 +96,23 @@ def irreflexivite(x):
 
 #exo7
 
+n = len(data)
+nb_paire_total = n * (n - 1) / 2
+nb_paire_pareto = 0
+
+for i in range(len(data) - 1):
+    for j in range(i+1, len(data)):
+        if(pareto_domine(data[i][2:], data[j][2:])):
+            nb_paire_pareto = nb_paire_pareto + 1
+
+print('Pourcentage avec 16 critères: {:.3%}'.format(nb_paire_pareto / nb_paire_total))
+
+nb_paire_pareto = 0
+
+for i in range(len(data) - 1):
+    for j in range(i+1, len(data)):
+        if(pareto_domine([data[i][2], data[i][15], data[i][17]], [data[j][2], data[j][15], data[j][17]])):
+            nb_paire_pareto = nb_paire_pareto + 1
+
+print('Pourcentage avec 1, 14, 16 critère: {:.3%}'.format(nb_paire_pareto / nb_paire_total))
+
