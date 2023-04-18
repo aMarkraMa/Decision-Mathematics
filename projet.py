@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from mip import *
+import sys
 #exo1
 exc = pd.ExcelFile("AGRIBALYSE3.1_partie agriculture_conv_vf.xlsx")
 # usecols choisir colone 0 et colone 3 à colone 19 de file xlsx
@@ -116,3 +118,48 @@ for i in range(len(data) - 1):
 
 print('Pourcentage avec 1, 14, 16 critère: {:.3%}'.format(nb_paire_pareto / nb_paire_total))
 
+#exo10
+print("------------------------------------exo10------------------------------------")
+w_hat = [21.06e-2, 6.31e-2, 5.01e-2, 4.78e-2, 8.96e-2, 1.84e-2, 2.13e-2, 6.2e-2, 2.8e-2, 2.96e-2, 3.71e-2, 1.92e-2, 7.94e-2, 8.51e-2, 8.32e-2, 7.55e-2] 
+
+def L1_inv(X, Y, w_hat):
+
+    if(SPw_hat(X) >=  SPw_hat(Y)):
+        print("SPw_hat(X) >= SPw_hat(Y)")
+        return
+    n = len(X)  # nombre des critères
+    m = Model("L1_inv")  # crée module de programmation linéaire
+
+    # ajouter des variable
+    # lb : lower bound
+    # CONTINUOUS: variable continu
+    # difference: variable auxiliaire
+    w = [m.add_var(var_type=CONTINUOUS, lb=0) for i in range(n)]
+    difference = [m.add_var(var_type=CONTINUOUS, lb=0) for i in range(n)]
+
+    # ajouter objet
+    m.objective = minimize(xsum(difference[i] for i in range(n)))
+
+    # ajouter des contraintes
+    m += xsum(w[i] * (X[i] - Y[i]) for i in range(n)) >= 0  # SPw(X) >= SPw(Y)
+    m += xsum(w[i] for i in range(n)) == 1  # Σ wi = 1 (i∈[1,16])
+
+    # contrainte de valeur absolue
+    for i in range(n):
+        m += w[i] - w_hat[i] <= difference[i]
+        m += w_hat[i] - w[i] <= difference[i]
+
+    # trouver le résolution optimal
+    m.optimize()
+
+    # retourner l'optimal
+    return m.objective_value
+
+def SPw_hat(X):
+    return xsum(w_hat[i] * X[i] for i in range(len(w_hat)))
+
+print("SPw_hat 0",SPw_hat(data[3][2:]))
+print("SPw_hat 1",SPw_hat(data[4][2:]))
+print("w_hat:", w_hat)
+optimal_value = L1_inv(data[3][2:], data[4][2:], w_hat)
+print("valeur optimal：", optimal_value)
