@@ -1,8 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 from mip import *
-import sys
+from functools import reduce
+from operator import mul
+
+
 #exo1
 exc = pd.ExcelFile("AGRIBALYSE3.1_partie agriculture_conv_vf.xlsx")
 # usecols choisir colone 0 et colone 3 à colone 19 de file xlsx
@@ -126,7 +130,7 @@ def L1_inv(X, Y, w_hat):
 
     if(SPw_hat(X) >=  SPw_hat(Y)):
         print("SPw_hat(X) >= SPw_hat(Y)")
-        return
+        return float('inf')
     n = len(X)  # nombre des critères
     m = Model("L1_inv")  # crée module de programmation linéaire
 
@@ -152,14 +156,71 @@ def L1_inv(X, Y, w_hat):
     # trouver le résolution optimal
     m.optimize()
 
-    # retourner l'optimal
-    return m.objective_value
+    #Vérifier l'état après la résolution du problème d'optimisation. 
+    # Si l'état est OPTIMAL ou FEASIBLE, m.objective_value est renvoyé. Sinon, l'infini est renvoyé.
+    if m.status == OptimizationStatus.OPTIMAL or m.status == OptimizationStatus.FEASIBLE:
+        return m.objective_value
+    else:
+        return float('inf')
 
 def SPw_hat(X):
     return xsum(w_hat[i] * X[i] for i in range(len(w_hat)))
 
-print("SPw_hat 0",SPw_hat(data[3][2:]))
-print("SPw_hat 1",SPw_hat(data[4][2:]))
+print("SPw_hat 0: ",SPw_hat(data[3][2:]))
+print("SPw_hat 1: ",SPw_hat(data[4][2:]))
 print("w_hat:", w_hat)
 optimal_value = L1_inv(data[3][2:], data[4][2:], w_hat)
-print("valeur optimal：", optimal_value)
+print("valeur optimal:", optimal_value)
+
+#exo11
+print("------------------------------------exo11------------------------------------")
+
+#  le nombre de paires telles qu’on peut inverser la préférence en changeant 
+# les poids d’une distance L1 inférieure ou égale à x, pour x une valeur donnée.
+
+def count_pairs_l1_inv_le_x(x_values, sample_size=10):
+    count_pairs = []
+    data_list = data.tolist()  # Conversion des tableaux NumPy en listes
+    if sample_size > len(data_list):
+        sample_size = len(data_list)
+    data_sample = random.sample(data_list, sample_size)  # Échantillons sélectionnés de manière aléatoire Taille de l'échantillon Échantillons
+    for x in x_values:
+        count = 0
+        for i in range(len(data_sample)):
+            for j in range(i + 1, len(data_sample)):
+                if L1_inv(data_sample[i][2:], data_sample[j][2:], w_hat) <= x:
+                    count += 1
+        count_pairs.append(count)
+    return count_pairs
+
+
+# donner des valeurs de x
+x_values = np.arange(0, 2, 0.2).tolist()
+count_pairs = count_pairs_l1_inv_le_x(x_values)
+
+
+plt.plot(x_values, count_pairs)
+plt.xlabel('x')
+plt.ylabel('Number of pairs (X, Y) with L1_inv(X, Y) ≤ x')
+plt.title('Number of pairs (X, Y) vs. x')
+plt.show()
+
+#exo12
+print("------------------------------------exo12------------------------------------")
+def p_ord(X, w):
+    X_sorted = sorted(X)  
+    MPO = sum(w[i] * X_sorted[i] for i in range(len(X)))
+    return MPO
+
+def p_geo(X, w):
+    X_weighted = [x_i ** w_i for x_i, w_i in zip(X, w)]
+    WG = reduce(mul, X_weighted) ** (1 / sum(w))
+    return WG
+
+
+w = [1/16] * 16  
+
+for X in data:
+    print(f"MPO pour {X[0]}: {p_ord(X[2:], w)}")
+    print(f"MG pour {X[0]}: {p_geo(X[2:], w)}")
+    
