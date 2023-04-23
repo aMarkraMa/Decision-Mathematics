@@ -101,7 +101,7 @@ def irreflexivite(x):
     return not pareto_domine(x, x)
 
 #exo7
-
+print("------------------------------------exo7------------------------------------")
 n = len(data)
 nb_paire_total = n * (n - 1) / 2
 nb_paire_pareto = 0
@@ -213,9 +213,9 @@ def p_ord(X, w):
     return MPO
 
 def p_geo(X, w):
-    X_weighted = [x_i ** w_i for x_i, w_i in zip(X, w)]
-    WG = reduce(mul, X_weighted) ** (1 / sum(w))
-    return WG
+    X_weighted = [max(x_i, 0) ** w_i for x_i, w_i in zip(X, w)] 
+    MG = reduce(mul, X_weighted) ** (1 / sum(w))
+    return MG
 
 
 w = [1/16] * 16  
@@ -224,3 +224,64 @@ for X in data:
     print(f"MPO pour {X[0]}: {p_ord(X[2:], w)}")
     print(f"MG pour {X[0]}: {p_geo(X[2:], w)}")
     
+# exo 15
+print("------------------------------------exo15------------------------------------")
+
+#Classement des alternatives 
+def rank_alternatives(values):
+    return sorted(range(len(values)), key=lambda x: values[x])
+
+#Calcul de la distance de Kendall-Tau
+def distance(order1, order2):
+    n = len(order1)
+    assert n == len(order2), "ils doivent avoir la même longueur"
+    
+    count = 0
+    for i in range(n):
+        for j in range(i+1, n):
+            rel_order1 = order1[i] - order1[j]
+            rel_order2 = order2[i] - order2[j]
+
+            count += 0.5 * (np.sign(rel_order1) != np.sign(rel_order2))
+            count += 0.5 * (rel_order1 * rel_order2 < 0)
+
+    return count
+
+values_MPO = [p_ord(X[2:], w) for X in data]
+values_MG = [p_geo(X[2:], w) for X in data]
+
+order_MPO = rank_alternatives(values_MPO)
+order_MG = rank_alternatives(values_MG)
+
+dkt_MPO_MG = distance(order_MPO, order_MG)
+
+print("dKT(MPO, MG):", dkt_MPO_MG)
+
+#exo 16
+def score(x):
+    return 100 - (np.log(10 * x + 1) / np.log(2 + 1 / 100 ** 4)) * 20
+
+x_values = np.linspace(0, 10, 1000)  
+y_values = score(x_values)  
+
+plt.plot(x_values, y_values)
+plt.xlabel('x')
+plt.ylabel('score(x)')
+plt.title('Graphique de la fonction score(x)')
+plt.grid(True)
+plt.show()
+
+#exo 17
+def categorie(score):
+    if 100 >= score >= 80:
+        return "A"
+    elif 80 > score >= 60:
+        return "B"
+    elif 60 > score >= 40:
+        return "C"
+    elif 40 > score >= 20:
+        return "D"
+    else:
+        return "E"
+ 
+ 
